@@ -37,6 +37,7 @@ COOLER_SETPOINT_C = -40.0
 COOLER_TAU_S = 2.0
 COOLER_READY_BAND_C = 0.5
 TEMP_DRIFT_C_PER_S = 0.4
+TEMP_DRIFT_ONSET_S = 2.0  # cooler holds setpoint this long before losing regulation
 
 AZ_LIMITS = (-170.0, 170.0)
 EL_LIMITS = (-30.0, 90.0)
@@ -299,7 +300,7 @@ class Device:
         span = AMBIENT_C - COOLER_SETPOINT_C
         temp = COOLER_SETPOINT_C + span * math.exp(-elapsed / COOLER_TAU_S)
         if Fault.TEMP_DRIFT in self.faults:
-            temp += TEMP_DRIFT_C_PER_S * max(0.0, elapsed - self._cooler_ready_after())
+            temp += TEMP_DRIFT_C_PER_S * max(0.0, elapsed - self._cooler_ready_after() - TEMP_DRIFT_ONSET_S)
         return temp
 
     def _temperature(self, arg: str) -> str:

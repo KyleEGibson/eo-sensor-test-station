@@ -39,6 +39,10 @@ requirements:
     category: Power
     text: Input current shall not exceed 4.0 A in any operating mode.
     verification: Test
+  - id: SYS-007
+    category: Power
+    text: After a power cycle the sensor shall restore default settings (gain 1, exposure 10.0 ms, gimbal at home).
+    verification: Test
 
   # ------------------------------------------------------------------ Thermal
   - id: SYS-010
