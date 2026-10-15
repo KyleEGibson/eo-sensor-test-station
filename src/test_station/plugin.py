@@ -11,6 +11,7 @@ Loaded through ``-p test_station.plugin`` in pyproject.toml.
 from __future__ import annotations
 
 import getpass
+import os
 import platform
 import subprocess
 import uuid
@@ -41,6 +42,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
                     help="inject a simulator fault for the whole run (repeatable)")
     group.addoption("--report-dir", default="reports", help="where to write the report, database and comm log")
     group.addoption("--operator", default=None, help="operator name recorded with the run")
+    group.addoption("--station", default=None, help="station name recorded with the run (default: host name)")
 
 
 def _now() -> str:
@@ -80,7 +82,7 @@ class Station:
         self.run = RunRecord(
             run_id=datetime.now().strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:4],
             started_at=_now(),
-            station=platform.node(),
+            station=opt.station or platform.node(),
             operator=opt.operator or _operator(),
             station_version=__version__,
             git_commit=_git_commit(config.rootpath),
@@ -134,7 +136,14 @@ class Station:
         finally:
             db.close()
         self.outputs.append(self.report_dir / "results.db")
-        self.outputs.insert(0, render_report(run, self.report_dir / "test_report.html"))
+        self.outputs.insert(0, render_report(run, self.report_dir / "test_report.html", self._rtm_href()))
+
+    def _rtm_href(self) -> str | None:
+        """Relative link to the RTM, when the traceability plugin is producing one."""
+        collector = self.config.pluginmanager.get_plugin("rtm-collector")
+        if collector is None:
+            return None
+        return Path(os.path.relpath(collector.out_dir.resolve() / "rtm.html", self.report_dir.resolve())).as_posix()
 
 
 def pytest_configure(config: pytest.Config) -> None:

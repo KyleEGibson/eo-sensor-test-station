@@ -76,7 +76,8 @@
   <table>
     <thead><tr><th>Test</th><th>Requirements</th><th>Result</th><th class="num">Time (s)</th><th class="num">Comm retries</th></tr></thead>
     <tbody>
-    {% for r in run.results %}
+    {# failures first so they are seen; order is otherwise preserved #}
+    {% for r in run.results|sort(attribute="outcome") %}
       <tr>
         <td>
           <code>{{ r.test_id }}</code>
