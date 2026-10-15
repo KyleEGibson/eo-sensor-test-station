@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test Report {{ run.run_id }}</title>
+<style>
+  :root { --bg:#f7f8fa; --card:#fff; --text:#1d2330; --muted:#5d6678; --line:#dfe3ea;
+          --pass:#1a7f37; --pass-bg:#e6f4ea; --fail:#c62828; --fail-bg:#fdecea; --skip:#8a6d00; --skip-bg:#fff6d6; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#14171c; --card:#1c2027; --text:#e6e9ef; --muted:#9aa3b2; --line:#2e343e;
+            --pass:#5fd47e; --pass-bg:#16301f; --fail:#ff7b72; --fail-bg:#3a1a1a; --skip:#e3c55a; --skip-bg:#332b0f; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  main { max-width:1100px; margin:0 auto; padding:24px 16px 48px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  h2 { font-size:16px; margin:28px 0 10px; }
+  .muted { color:var(--muted); }
+  .banner { display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:16px 20px; border-radius:10px; margin:16px 0; font-weight:600; }
+  .banner.PASS { background:var(--pass-bg); color:var(--pass); }
+  .banner.FAIL { background:var(--fail-bg); color:var(--fail); }
+  .banner .big { font-size:26px; letter-spacing:.04em; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+  .card dt { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.05em; }
+  .card dd { margin:0 0 8px; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+  .table-wrap { overflow-x:auto; background:var(--card); border:1px solid var(--line); border-radius:10px; }
+  table { border-collapse:collapse; width:100%; min-width:720px; }
+  th, td { text-align:left; padding:8px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  td.num { font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap; }
+  tr:last-child td { border-bottom:none; }
+  .tag { display:inline-block; padding:1px 8px; border-radius:999px; font-size:12px; font-weight:600; }
+  .passed, .P { background:var(--pass-bg); color:var(--pass); }
+  .failed, .F { background:var(--fail-bg); color:var(--fail); }
+  .skipped { background:var(--skip-bg); color:var(--skip); }
+  code { font-family:ui-monospace,Consolas,monospace; font-size:12.5px; }
+  .msg { white-space:pre-wrap; color:var(--fail); font-family:ui-monospace,Consolas,monospace; font-size:12px; margin-top:6px; }
+  .meas { margin:6px 0 0; width:100%; min-width:0; }
+  .meas td, .meas th { padding:3px 8px; border:none; font-size:12.5px; }
+  a { color:inherit; }
+</style>
+</head>
+<body>
+<main>
+  <h1>EOS-100 Acceptance Test Report</h1>
+  <div class="muted">Run {{ run.run_id }} &middot; {{ run.started_at }}</div>
+
+  <div class="banner {{ run.outcome }}">
+    <span class="big">{{ run.outcome }}</span>
+    <span>{{ counts.passed }} passed &middot; {{ counts.failed }} failed &middot; {{ counts.skipped }} skipped</span>
+    {% if rtm_href %}<span>&middot; <a href="{{ rtm_href }}">Requirements traceability matrix</a></span>{% endif %}
+  </div>
+
+  <div class="grid">
+    <dl class="card">
+      <dt>Device under test</dt><dd>{{ run.dut_model }} &middot; {{ run.dut_serial }}</dd>
+      <dt>Firmware</dt><dd>{{ run.dut_firmware }}</dd>
+      <dt>Injected faults</dt><dd>{{ run.injected_faults or "none" }}</dd>
+    </dl>
+    <dl class="card">
+      <dt>Station</dt><dd>{{ run.station }}</dd>
+      <dt>Station software</dt><dd>v{{ run.station_version }} &middot; commit <code>{{ run.git_commit }}</code></dd>
+      <dt>Operator</dt><dd>{{ run.operator }}</dd>
+    </dl>
+    <dl class="card">
+      <dt>Started</dt><dd>{{ run.started_at }}</dd>
+      <dt>Finished</dt><dd>{{ run.finished_at }}</dd>
+      <dt>Communication retries</dt><dd>{{ run.comm_retries }}</dd>
+    </dl>
+  </div>
+
+  <h2>Test results</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Test</th><th>Requirements</th><th>Result</th><th class="num">Time (s)</th></tr></thead>
+    <tbody>
+    {% for r in run.results %}
+      <tr>
+        <td>
+          <code>{{ r.test_id }}</code>
+          {% if r.measurements %}
+          <table class="meas">
+            <tr><th>Measurement</th><th class="num">Value</th><th>Limits</th><th>Units</th><th></th></tr>
+            {% for m in r.measurements %}
+            <tr><td>{{ m.name }}</td><td class="num">{{ "%.3f"|format(m.value) }}</td><td>{{ m.limits_text() }}</td><td>{{ m.units }}</td>
+                <td><span class="tag {{ 'P' if m.passed else 'F' }}">{{ 'PASS' if m.passed else 'FAIL' }}</span></td></tr>
+            {% endfor %}
+          </table>
+          {% endif %}
+          {% if r.message %}<div class="msg">{{ r.message }}</div>{% endif %}
+        </td>
+        <td>{{ r.requirements|join(", ") or "—" }}</td>
+        <td><span class="tag {{ r.outcome }}">{{ r.outcome|upper }}</span></td>
+        <td class="num">{{ "%.2f"|format(r.duration_s) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</main>
+</body>
+</html>
