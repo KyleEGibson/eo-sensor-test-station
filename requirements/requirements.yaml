@@ -1,0 +1,136 @@
+# EOS-100 Electro-Optical Sensor — System Requirements Specification (SRS)
+#
+# Every requirement has a verification method (IADT):
+#   Test          - verified by an automated test linked with @pytest.mark.req("ID")
+#   Inspection    - verified by examining an artifact; `evidence` points to it
+#   Analysis      - verified by calculation or modeling; `evidence` points to it
+#   Demonstration - verified by operating the system; `evidence` points to it
+#
+# The RTM plugin (src/pytest_rtm) reads this file on every test run.
+
+document: SRS-EOS-100
+revision: B
+
+requirements:
+  # ---------------------------------------------------------------- Identity
+  - id: SYS-001
+    category: Identification
+    text: The sensor shall report manufacturer, model, serial number and firmware version in response to *IDN?.
+    verification: Test
+
+  # ------------------------------------------------------- Power and startup
+  - id: SYS-002
+    category: Power
+    text: The sensor shall reach the READY state within 3.0 s of power-on.
+    verification: Test
+  - id: SYS-003
+    category: Power
+    text: The sensor built-in self test (*TST?) shall return 0 when no faults are present.
+    verification: Test
+  - id: SYS-004
+    category: Power
+    text: The sensor shall reject operational commands with error -200 while powered off and error -201 while booting.
+    verification: Test
+  - id: SYS-005
+    category: Power
+    text: The input bus voltage shall measure 28.0 V +/- 1.0 V while powered.
+    verification: Test
+  - id: SYS-006
+    category: Power
+    text: Input current shall not exceed 4.0 A in any operating mode.
+    verification: Test
+
+  # ------------------------------------------------------------------ Thermal
+  - id: SYS-010
+    category: Thermal
+    text: The detector cooler shall reach -40.0 C +/- 1.0 C within 15.0 s of power-on.
+    verification: Test
+  - id: SYS-011
+    category: Thermal
+    text: Detector temperature shall remain within +/- 1.0 C of setpoint for at least 10.0 s after the cooler reports READY.
+    verification: Test
+
+  # ------------------------------------------------------------------- Gimbal
+  - id: SYS-020
+    category: Gimbal
+    text: The gimbal shall position to the commanded azimuth within +/- 0.1 deg.
+    verification: Test
+  - id: SYS-021
+    category: Gimbal
+    text: The gimbal shall position to the commanded elevation within +/- 0.1 deg.
+    verification: Test
+  - id: SYS-022
+    category: Gimbal
+    text: The gimbal shall complete a 90 deg slew within 2.0 s.
+    verification: Test
+  - id: SYS-023
+    category: Gimbal
+    text: The gimbal shall reject commands outside its travel limits (azimuth -170 to +170 deg, elevation -30 to +90 deg) with error -222 and shall not move.
+    verification: Test
+  - id: SYS-024
+    category: Gimbal
+    text: The gimbal shall return to home (0, 0) on GIMB:HOME and on *RST.
+    verification: Test
+
+  # ------------------------------------------------------------------- Imager
+  - id: SYS-030
+    category: Imager
+    text: The imager shall accept gain 1 to 16 and exposure 0.1 to 100.0 ms and reject values outside those ranges with error -222.
+    verification: Test
+  - id: SYS-031
+    category: Imager
+    text: Captured frames shall contain no more than 5 dead pixels.
+    verification: Test
+  - id: SYS-032
+    category: Imager
+    text: Frame mean intensity shall be linear with exposure time below saturation (coefficient of determination R^2 >= 0.99).
+    verification: Test
+  - id: SYS-033
+    category: Imager
+    text: Each frame shall carry a CRC-32 that matches its contents.
+    verification: Test
+
+  # -------------------------------------------------------------- Interface
+  - id: SYS-040
+    category: Interface
+    text: The sensor shall report errors through SYST:ERR? in first-in first-out order and return 0,"No error" when the queue is empty.
+    verification: Test
+  - id: SYS-041
+    category: Interface
+    text: Every sensor response shall end with an XOR checksum in the form *HH.
+    verification: Test
+  - id: SYS-042
+    category: Interface
+    text: The sensor command interface shall be documented in an Interface Control Document.
+    verification: Inspection
+    evidence: docs/interface_control_document.md
+
+  # ---------------------------------------------- Test station requirements
+  - id: TS-001
+    category: Test Station
+    text: The test station shall verify the checksum of every response and discard corrupted responses.
+    verification: Test
+  - id: TS-002
+    category: Test Station
+    text: The test station shall retry a failed or timed-out command up to 2 times before declaring a communication failure.
+    verification: Test
+  - id: TS-003
+    category: Test Station
+    text: The test station shall record every measurement with its value, limits, units and pass/fail result in the results database.
+    verification: Test
+  - id: TS-004
+    category: Test Station
+    text: The test station shall generate an HTML test report for every run that identifies the DUT, its firmware version and the station software revision.
+    verification: Test
+  - id: TS-005
+    category: Test Station
+    text: The test suite shall detect each injectable hardware fault (temperature drift, gimbal stall, bus voltage sag, dead pixels).
+    verification: Test
+  - id: TS-006
+    category: Test Station
+    text: The test station shall generate a requirements traceability matrix on every run and flag requirements with no passing verification.
+    verification: Test
+  - id: TS-007
+    category: Test Station
+    text: The test station shall reject test cases that reference requirement IDs not present in the SRS.
+    verification: Test
