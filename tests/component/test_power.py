@@ -13,6 +13,7 @@ def powered_off(sensor):
     return sensor
 
 
+@pytest.mark.timing
 @pytest.mark.req("SYS-002")
 def test_boot_time(powered_off, measure):
     powered_off.power_on()
@@ -20,6 +21,7 @@ def test_boot_time(powered_off, measure):
     measure("time to READY", boot_s, high=limits.BOOT_TIME_MAX_S, units="s")
 
 
+@pytest.mark.timing
 @pytest.mark.req("SYS-004")
 def test_commands_rejected_while_off_and_booting(powered_off):
     with pytest.raises(DeviceError) as off:

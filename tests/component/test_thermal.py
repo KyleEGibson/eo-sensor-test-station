@@ -21,6 +21,7 @@ def cold_start(sensor):
     return powered_at
 
 
+@pytest.mark.timing
 @pytest.mark.req("SYS-010")
 def test_cooldown_time_and_setpoint(sensor, cold_start, measure):
     sensor.wait_cooler_ready(timeout_s=limits.COOLDOWN_MAX_S * 2)
@@ -30,6 +31,7 @@ def test_cooldown_time_and_setpoint(sensor, cold_start, measure):
     measure("detector temperature at READY", sensor.temperature(), low=low, high=high, units="C")
 
 
+@pytest.mark.timing
 @pytest.mark.req("SYS-011")
 def test_temperature_stability(sensor, cold_start, measure):
     sensor.wait_cooler_ready(timeout_s=limits.COOLDOWN_MAX_S * 2)

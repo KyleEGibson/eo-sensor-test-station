@@ -74,7 +74,7 @@
   <h2>Test results</h2>
   <div class="table-wrap">
   <table>
-    <thead><tr><th>Test</th><th>Requirements</th><th>Result</th><th class="num">Time (s)</th></tr></thead>
+    <thead><tr><th>Test</th><th>Requirements</th><th>Result</th><th class="num">Time (s)</th><th class="num">Comm retries</th></tr></thead>
     <tbody>
     {% for r in run.results %}
       <tr>
@@ -94,6 +94,7 @@
         <td>{{ r.requirements|join(", ") or "—" }}</td>
         <td><span class="tag {{ r.outcome }}">{{ r.outcome|upper }}</span></td>
         <td class="num">{{ "%.2f"|format(r.duration_s) }}</td>
+        <td class="num">{% if r.comm_retries %}<span class="tag skipped">{{ r.comm_retries }}</span>{% else %}0{% endif %}</td>
       </tr>
     {% endfor %}
     </tbody>

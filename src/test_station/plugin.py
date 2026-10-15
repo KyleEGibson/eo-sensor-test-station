@@ -28,6 +28,7 @@ DEFAULT_SIM_SPEED = 10.0
 
 STATION = pytest.StashKey["Station"]()
 MEASUREMENTS = pytest.StashKey[list]()
+RETRIES_AT_START = pytest.StashKey[int]()
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
@@ -210,20 +211,38 @@ def _message(report: pytest.TestReport) -> str:
     return crash.message if crash is not None else str(report.longrepr)
 
 
+def _retries(station: Station) -> int:
+    return station.sensor.retries_used if station.sensor is not None else 0
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_call(item: pytest.Item) -> None:
+    item.stash[RETRIES_AT_START] = _retries(item.config.stash[STATION])
+
+
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
     outcome = yield
     report: pytest.TestReport = outcome.get_result()
-    run = item.config.stash[STATION].run
+    station = item.config.stash[STATION]
+    run = station.run
     if report.when == "call" or (report.when == "setup" and not report.passed):
         requirements = [req for mark in item.iter_markers("req") for req in mark.args]
+        retries = _retries(station) - item.stash.get(RETRIES_AT_START, _retries(station))
+        message = _message(report)
+        if report.failed and retries and item.get_closest_marker("timing"):
+            # Retry latency is indistinguishable from device delay, so point
+            # the engineer at the link before they suspect the hardware.
+            message += (f"\n[station] {retries} comm retries during this timing test; "
+                        "elapsed-time results may include retry latency")
         run.results.append(TestResult(
             test_id=item.nodeid,
             requirements=requirements,
             outcome=report.outcome,
             duration_s=report.duration,
-            message=_message(report),
+            message=message,
             measurements=list(item.stash.get(MEASUREMENTS, [])),
+            comm_retries=retries,
         ))
     elif report.when == "teardown" and report.failed and run.results:
         last = run.results[-1]

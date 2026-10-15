@@ -11,6 +11,7 @@ pytestmark = pytest.mark.system
 SCAN_PATTERN = [(-60, 10), (-30, 20), (0, 30), (30, 20), (60, 10)]
 
 
+@pytest.mark.timing
 @pytest.mark.req("SYS-002", "SYS-003", "SYS-010", "SYS-020", "SYS-021", "SYS-031", "SYS-033")
 def test_cold_start_to_imaging_mission(sensor, measure):
     """Cold start, wait for the cooler, then run a five-point scan with a capture at each point."""
@@ -42,7 +43,10 @@ def test_current_stays_in_budget_while_scanning_and_imaging(sensor, measure):
     peak = 0.0
     for azimuth, elevation in [(-150, 0), (150, 85), (0, -25), (0, 0)]:
         sensor.point(azimuth, elevation)
+        deadline = time.monotonic() + 10.0 / sensor.time_scale
         while sensor.query("GIMB:STAT?") == "MOVING":
+            if time.monotonic() > deadline:
+                raise TimeoutError(f"gimbal did not settle at ({azimuth}, {elevation})")
             peak = max(peak, sensor.current())
             sensor.capture()
     measure("peak current while scanning", peak, high=limits.CURRENT_MAX_A, units="A")

@@ -23,6 +23,7 @@ def test_pointing_accuracy(sensor, measure, azimuth, elevation):
     measure("elevation error", el - elevation, low=-TOL, high=TOL, units="deg")
 
 
+@pytest.mark.timing
 @pytest.mark.req("SYS-022")
 def test_slew_time_90_degrees(sensor, measure):
     sensor.home()

@@ -35,4 +35,5 @@ rtm_requirements = "requirements/requirements.yaml"
 rtm_output = "reports"
 markers = [
     "system: system-level tests that exercise several subsystems together",
+    "timing: measures elapsed time; results are invalid when the comm link needs retries",
 ]

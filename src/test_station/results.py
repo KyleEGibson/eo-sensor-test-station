@@ -32,7 +32,8 @@ CREATE TABLE IF NOT EXISTS test_results (
     requirements TEXT,
     outcome      TEXT NOT NULL,
     duration_s   REAL,
-    message      TEXT
+    message      TEXT,
+    comm_retries INTEGER
 );
 CREATE TABLE IF NOT EXISTS measurements (
     run_id  TEXT NOT NULL REFERENCES runs(run_id),
@@ -83,6 +84,7 @@ class TestResult:
     duration_s: float
     message: str = ""
     measurements: list[Measurement] = field(default_factory=list)
+    comm_retries: int = 0
 
 
 @dataclass
@@ -115,6 +117,14 @@ class ResultsDB:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(self.path)
         self._conn.executescript(SCHEMA)
+        self._migrate()
+
+    def _migrate(self) -> None:
+        """Bring databases created by older station versions up to the current schema."""
+        columns = {row[1] for row in self._conn.execute("PRAGMA table_info(test_results)")}
+        if "comm_retries" not in columns:
+            with self._conn:
+                self._conn.execute("ALTER TABLE test_results ADD COLUMN comm_retries INTEGER")
 
     def close(self) -> None:
         self._conn.close()
@@ -129,9 +139,9 @@ class ResultsDB:
             )
             for result in run.results:
                 self._conn.execute(
-                    "INSERT INTO test_results VALUES (?,?,?,?,?,?)",
+                    "INSERT INTO test_results VALUES (?,?,?,?,?,?,?)",
                     (run.run_id, result.test_id, ",".join(result.requirements),
-                     result.outcome, result.duration_s, result.message),
+                     result.outcome, result.duration_s, result.message, result.comm_retries),
                 )
                 self._conn.executemany(
                     "INSERT INTO measurements VALUES (?,?,?,?,?,?,?,?)",
