@@ -51,6 +51,19 @@ def test_measure_fixture_records_before_judging(measure, request):
     recorded.clear()  # keep this self-test's deliberate failure out of the run report
 
 
+@pytest.mark.req("TS-003", "TS-004")
+def test_run_outputs_created_in_new_report_dir(pytester):
+    """Regression: the comm log was written before the report directory existed."""
+    pytester.makepyfile(test_dut="""
+        def test_identify(sensor, measure):
+            measure("bus voltage", sensor.voltage(), low=27, high=29, units="V")
+    """)
+    result = pytester.runpytest("-p", "test_station.plugin", "--no-rtm", "--report-dir", "fresh/nested")
+    result.assert_outcomes(passed=1)
+    out = pytester.path / "fresh" / "nested"
+    assert {p.name for p in out.iterdir()} == {"test_report.html", "comm_log.tsv", "results.db"}
+
+
 @pytest.mark.req("TS-004")
 def test_report_identifies_dut_and_station(tmp_path):
     html = render_report(sample_run(outcome="FAIL"), tmp_path / "report.html").read_text(encoding="utf-8")

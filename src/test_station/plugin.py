@@ -116,6 +116,7 @@ class Station:
     def finish(self) -> None:
         run = self.run
         run.finished_at = _now()
+        self.report_dir.mkdir(parents=True, exist_ok=True)
         run.outcome = "FAIL" if any(r.outcome == "failed" for r in run.results) else "PASS"
         if self.sensor is not None:
             run.comm_retries = self.sensor.retries_used
