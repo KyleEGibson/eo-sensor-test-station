@@ -1,4 +1,4 @@
-# EOS-100 Electro-Optical Sensor — System Requirements Specification (SRS)
+# EOS-100 Electro-Optical Sensor: System Requirements Specification (SRS)
 #
 # Every requirement has a verification method (IADT):
 #   Test          - verified by an automated test linked with @pytest.mark.req("ID")
@@ -12,13 +12,13 @@ document: SRS-EOS-100
 revision: B
 
 requirements:
-  # ---------------------------------------------------------------- Identity
+  # Identity
   - id: SYS-001
     category: Identification
     text: The sensor shall report manufacturer, model, serial number and firmware version in response to *IDN?.
     verification: Test
 
-  # ------------------------------------------------------- Power and startup
+  # Power and startup
   - id: SYS-002
     category: Power
     text: The sensor shall reach the READY state within 3.0 s of power-on.
@@ -44,7 +44,7 @@ requirements:
     text: After a power cycle the sensor shall restore default settings (gain 1, exposure 10.0 ms, gimbal at home).
     verification: Test
 
-  # ------------------------------------------------------------------ Thermal
+  # Thermal
   - id: SYS-010
     category: Thermal
     text: The detector cooler shall reach -40.0 C +/- 1.0 C within 15.0 s of power-on.
@@ -54,7 +54,7 @@ requirements:
     text: Detector temperature shall remain within +/- 1.0 C of setpoint for at least 10.0 s after the cooler reports READY.
     verification: Test
 
-  # ------------------------------------------------------------------- Gimbal
+  # Gimbal
   - id: SYS-020
     category: Gimbal
     text: The gimbal shall position to the commanded azimuth within +/- 0.1 deg.
@@ -76,7 +76,7 @@ requirements:
     text: The gimbal shall return to home (0, 0) on GIMB:HOME and on *RST.
     verification: Test
 
-  # ------------------------------------------------------------------- Imager
+  # Imager
   - id: SYS-030
     category: Imager
     text: The imager shall accept gain 1 to 16 and exposure 0.1 to 100.0 ms and reject values outside those ranges with error -222.
@@ -94,7 +94,7 @@ requirements:
     text: Each frame shall carry a CRC-32 that matches its contents.
     verification: Test
 
-  # -------------------------------------------------------------- Interface
+  # Interface
   - id: SYS-040
     category: Interface
     text: The sensor shall report errors through SYST:ERR? in first-in first-out order and return 0,"No error" when the queue is empty.
@@ -109,7 +109,7 @@ requirements:
     verification: Inspection
     evidence: docs/interface_control_document.md
 
-  # ---------------------------------------------- Test station requirements
+  # Test station requirements
   - id: TS-001
     category: Test Station
     text: The test station shall verify the checksum of every response and discard corrupted responses.

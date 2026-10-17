@@ -1,14 +1,14 @@
-# EO Sensor Test Station
+# eo-sensor-test-station
 
 [![CI](https://github.com/KyleEGibson/eo-sensor-test-station/actions/workflows/ci.yml/badge.svg)](https://github.com/KyleEGibson/eo-sensor-test-station/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue)
 ![Requirements verified](https://img.shields.io/badge/requirements%20verified-28%2F28-brightgreen)
 
-An automated integration and test station for a simulated electro-optical sensor (the EOS-100), with built-in **requirements traceability**.
+Automated test station for a simulated electro-optical sensor (the "EOS-100"), with requirements traceability built in.
 
-The sensor is a pure-software model of a cooled IR camera with a two-axis gimbal. The test station talks to it over a serial-style protocol, runs component-level and system-level functional tests against requirement limits, injects hardware faults, and produces a test report, a results database and a requirements traceability matrix (RTM) on every run.
+The sensor is a software model of a cooled IR camera on a two-axis gimbal. The station talks to it over a serial-style ASCII protocol, runs component and system tests against the requirement limits, can inject hardware faults, and every run produces a test report, a results database and an RTM.
 
-**[Latest test report](https://kyleegibson.github.io/eo-sensor-test-station/)** · **[Latest RTM](https://kyleegibson.github.io/eo-sensor-test-station/rtm.html)** (published by CI)
+[Latest test report](https://kyleegibson.github.io/eo-sensor-test-station/) | [Latest RTM](https://kyleegibson.github.io/eo-sensor-test-station/rtm.html) (CI publishes both)
 
 | Passing run | Run with an injected fault |
 |---|---|
@@ -16,15 +16,15 @@ The sensor is a pure-software model of a cooled IR camera with a two-axis gimbal
 
 ![Requirements traceability matrix](docs/images/rtm.png)
 
-## What this demonstrates
-| Integration/test engineering task | Where |
+## What it covers
+| Test/integration task | Where |
 |---|---|
 | Test plans, procedures, test cases | [`docs/test_plan.md`](docs/test_plan.md), `tests/component`, `tests/system` |
 | Requirements traceability | [`requirements/requirements.yaml`](requirements/requirements.yaml) + `src/pytest_rtm` (RTM in HTML/Excel/JSON/Markdown) |
 | Functional tests at component and system level | `tests/component/*`, `tests/system/*` |
 | Scripting and test automation | `src/test_station` (pyserial driver + pytest test executive) |
 | Setting up and configuring the system under test | `src/eos_sim`, `--dut-url`, `--time-scale`, `--inject-fault` |
-| Root cause analysis and corrective action | [Defects found](#defects-found-during-development) below; `reports/comm_log.tsv` transcript |
+| Root cause analysis and corrective action | [Bugs found](#bugs-found-while-building-it) below; `reports/comm_log.tsv` transcript |
 | Failure and trend analysis | [`docs/fault_campaign.md`](docs/fault_campaign.md); append-only `results.db` |
 | Configuration management | Git commit recorded in every report; CI on every push; database schema migration |
 | Technical documentation | [ICD](docs/interface_control_document.md), [test plan](docs/test_plan.md), [design decisions](docs/design_decisions.md) |
@@ -41,7 +41,7 @@ flowchart LR
   RTM --> M[rtm.html / .xlsx / .json / .md]
 ```
 
-## Quick start
+## Running it
 ```bash
 python -m venv .venv
 .venv\Scripts\activate            # Windows  (source .venv/bin/activate on Linux/macOS)
@@ -60,19 +60,19 @@ python scripts/fault_campaign.py  # about 2 min; writes docs/fault_campaign.md
 ```
 
 ## Fault campaign
-A test suite that cannot fail proves nothing. The campaign reruns the acceptance suites once per injectable fault:
+To make sure the tests can actually fail, the campaign reruns the acceptance suites once for each fault the simulator can inject:
 
 | Fault | Expected | Tests failed | Result |
 |---|---|---:|---|
 | none (baseline) | all pass | 0 / 43 | PASS |
-| TEMP_DRIFT | detected | 1 / 43 | PASS: only the stability test catches it; the sensor's own BIT does not |
+| TEMP_DRIFT | detected | 1 / 43 | PASS: only the stability test catches it, the sensor's own BIT misses it |
 | GIMBAL_STALL | detected | 15 / 43 | PASS |
 | VOLT_SAG | detected | 3 / 43 | PASS |
 | DEAD_PIXELS | detected | 3 / 43 | PASS |
 | COMM_DROP | tolerated | 0 / 37 | PASS: 145 retries |
 | COMM_CORRUPT | tolerated | 0 / 37 | PASS: 3,330 corrupted responses discarded |
 
-Full details are in [`docs/fault_campaign.md`](docs/fault_campaign.md).
+Details in [`docs/fault_campaign.md`](docs/fault_campaign.md).
 
 ## Layout
 ```
@@ -88,13 +88,13 @@ tests/station/     verification of the station itself (TS-xxx requirements)
 docs/              ICD, test plan, design decisions, fault campaign results
 ```
 
-## Defects found during development
-Real issues found while building and testing the station. Each is described in its commit message.
+## Bugs found while building it
+Each one is also written up in its commit message.
 
 | # | Symptom | Root cause | Corrective action |
 |---|---|---|---|
 | 1 | Saturation test failed | Simulated sensor's maximum signal (4064) never reached the 12-bit ADC limit (4095) | Corrected the response constant |
-| 2 | Cooler tests failed on every run | Polled `COOL:STAT?` while the sensor was booting, which it rejects with −201 | Wait for READY first; cooldown still timed from power-on |
+| 2 | Cooler tests failed on every run | Polled `COOL:STAT?` while the sensor was booting, which it rejects with -201 | Wait for READY first; cooldown still timed from power-on |
 | 3 | RTM plugin crashed at session end | A rejected requirement ID had already been stored as a trace link | Validate all links before storing any |
 | 4 | Drift fault: cooler never reported READY | Simulated drift began the instant the cooler reached its band | Added a 2 s hold before drift begins |
 | 5 | Fault campaign hung | Current test looped on `MOVING` with no deadline; a stalled gimbal never stops moving | Added a settle deadline and a per-run campaign timeout |

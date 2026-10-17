@@ -1,9 +1,4 @@
-"""Verify that the station's checks catch each injectable hardware fault (TS-005).
-
-A test suite that never fails is not evidence of anything. Each test here
-injects one fault and confirms the corresponding acceptance check would flag
-it, using the same limits as the acceptance tests.
-"""
+"""TS-005: each injected hardware fault gets caught by the matching acceptance check."""
 
 import pytest
 

@@ -2,9 +2,8 @@
 
     python scripts/fault_campaign.py            # writes docs/fault_campaign.md
 
-A fault is DETECTED when at least one acceptance test fails with it injected.
-Communication faults are expected to be TOLERATED: every test still passes,
-because the station retries, and the run records how many retries it needed.
+DETECTED = at least one acceptance test fails. Comm faults should be TOLERATED
+instead: everything passes thanks to retries, and we log how many it took.
 """
 
 from __future__ import annotations

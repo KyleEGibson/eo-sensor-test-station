@@ -1,12 +1,8 @@
-"""Instrument driver for the EOS-100 sensor.
+"""EOS-100 driver, written from the ICD separately from the simulator.
 
-Implements the protocol in docs/interface_control_document.md independently of
-the simulator, so a mistake in one side is caught by the other. Connections go
-through pyserial, so the URL can be a real port (``COM3``, ``/dev/ttyUSB0``) or a
-network socket (``socket://127.0.0.1:5025``).
-
-All durations exposed by this class are in device seconds. ``time_scale`` is the
-simulator's speed-up factor (1.0 for real hardware).
+The URL can be a serial port (COM3, /dev/ttyUSB0) or socket://host:port.
+Durations are in device seconds; time_scale is the simulator speed-up (1.0 on
+real hardware).
 """
 
 from __future__ import annotations
@@ -61,7 +57,6 @@ def checksum(payload: str) -> str:
 
 
 def unframe(raw: bytes) -> str:
-    """Strip and verify the ``*HH`` checksum; raise CommError if invalid."""
     if not raw.endswith(b"\n"):
         raise CommError("timed out waiting for response")
     try:
@@ -94,8 +89,7 @@ class EOSensor:
         self.comm_log: list[tuple[float, str, str, int]] = []
         self._port: serial.SerialBase | None = None
 
-    # ------------------------------------------------------------ connection
-
+    # connection
     def open(self) -> "EOSensor":
         self._port = serial.serial_for_url(self.url, timeout=self.timeout)
         return self
@@ -111,14 +105,9 @@ class EOSensor:
     def __exit__(self, *exc) -> None:
         self.close()
 
-    # ------------------------------------------------------------- transport
-
+    # transport
     def transact(self, command: str) -> str:
-        """Send one command and return the verified payload.
-
-        Retries up to ``retries`` times on timeout or checksum failure. Error
-        responses (``ERR <code>``) are valid responses and are not retried.
-        """
+        # retries on timeout/bad checksum; ERR <code> is a real answer so no retry
         if self._port is None:
             raise CommError("port is not open")
         failure: CommError | None = None
@@ -148,7 +137,6 @@ class EOSensor:
             raise CommError(f"{command!r} expected OK, got {response!r}")
 
     def _poll(self, command: str, expected: str, timeout_s: float) -> float:
-        """Poll until ``command`` returns ``expected``; return elapsed device seconds."""
         start = time.monotonic()
         deadline = start + timeout_s / self.time_scale
         while True:
@@ -161,8 +149,7 @@ class EOSensor:
     def sleep(self, device_seconds: float) -> None:
         time.sleep(device_seconds / self.time_scale)
 
-    # ----------------------------------------------------------------- system
-
+    # system
     def identify(self) -> Identity:
         manufacturer, model, serial_no, firmware = self.query("*IDN?").split(",")
         return Identity(manufacturer, model, serial_no, firmware)
@@ -194,16 +181,14 @@ class EOSensor:
                 return drained
             drained.append((int(code), message.strip('"')))
 
-    # ------------------------------------------------------------------ power
-
+    # power
     def voltage(self) -> float:
         return float(self.query("MEAS:VOLT?"))
 
     def current(self) -> float:
         return float(self.query("MEAS:CURR?"))
 
-    # ---------------------------------------------------------------- thermal
-
+    # thermal
     def temperature(self) -> float:
         return float(self.query("MEAS:TEMP?"))
 
@@ -213,8 +198,7 @@ class EOSensor:
     def wait_cooler_ready(self, timeout_s: float) -> float:
         return self._poll("COOL:STAT?", "READY", timeout_s)
 
-    # ----------------------------------------------------------------- gimbal
-
+    # gimbal
     def point(self, azimuth: float, elevation: float) -> None:
         self.write(f"GIMB:AZ {azimuth}")
         self.write(f"GIMB:EL {elevation}")
@@ -229,8 +213,7 @@ class EOSensor:
     def wait_gimbal_idle(self, timeout_s: float) -> float:
         return self._poll("GIMB:STAT?", "IDLE", timeout_s)
 
-    # ----------------------------------------------------------------- imager
-
+    # imager
     def set_gain(self, gain: int) -> None:
         self.write(f"IMG:GAIN {gain}")
 
@@ -242,8 +225,7 @@ class EOSensor:
         body = ",".join(fields[:4])
         return Frame(int(fields[0]), float(fields[1]), float(fields[2]), int(fields[3]), int(fields[4], 16), body)
 
-    # ------------------------------------------------- simulator-only controls
-
+    # simulator-only controls
     def inject_fault(self, name: str) -> None:
         self.write(f"SIM:FAULT {name}")
 

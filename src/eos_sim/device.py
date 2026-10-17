@@ -1,17 +1,8 @@
-"""Behavioral model of the EOS-100 electro-optical sensor.
+"""Simulated EOS-100 sensor (the DUT). Commands are in docs/interface_control_document.md.
 
-This is the device under test (DUT). It stands in for real hardware so the test
-station can be developed and exercised without a lab. The model is simple but
-physically plausible:
-
-* the detector cooler follows a first-order exponential toward its setpoint,
-* the two-axis gimbal slews at a fixed rate and reports encoder noise,
-* the imager's output is linear in gain x exposure until the 12-bit ADC saturates,
-* current draw rises while the cooler pulls down and while the gimbal moves.
-
-All timing runs on a simulated clock that can be sped up (``speed``) so the full
-test suite finishes in seconds. The command set is described in
-docs/interface_control_document.md.
+Cooler is a first-order exponential to setpoint, gimbal slews at a fixed rate,
+imager is linear in gain*exposure until the 12-bit ADC saturates. The clock can
+be sped up (speed) so the whole suite runs in seconds.
 """
 
 from __future__ import annotations
@@ -86,8 +77,6 @@ def checksum(payload: str) -> str:
 
 
 class _Axis:
-    """One gimbal axis slewing at a constant rate toward its target."""
-
     def __init__(self) -> None:
         self.start = 0.0
         self.target = 0.0
@@ -112,8 +101,6 @@ class _Axis:
 
 
 class Device:
-    """Thread-safe model of one EOS-100 unit."""
-
     def __init__(
         self,
         serial: str = "000123",
@@ -162,23 +149,18 @@ class Device:
             "SIM:FAULT?": lambda arg: ",".join(sorted(f.value for f in self.faults)) or "NONE",
             "SIM:FAULT:CLR": self._clear_faults,
         }
-        # Commands that work regardless of power state.
+        # these work even when powered off
         self._always_available = {
             "*IDN?", "*RST", "SYST:POW", "SYST:POW?", "SYST:STAT?", "SYST:ERR?",
             "SIM:FAULT", "SIM:FAULT?", "SIM:FAULT:CLR",
         }
 
-    # ------------------------------------------------------------------ public
-
+    # public
     def now(self) -> float:
-        """Simulated seconds since the device was created."""
         return (self._wall_clock() - self._t_origin) * self.speed
 
     def handle(self, line: str) -> str | None:
-        """Execute one command line and return the framed response.
-
-        Returns None when a communication fault swallows the response.
-        """
+        # returns None when a comm fault "loses" the response
         with self._lock:
             payload = self._execute(line.strip())
             self._responses += 1
@@ -189,8 +171,7 @@ class Device:
                 framed = chr(ord(framed[0]) ^ 0x20) + framed[1:]
             return framed
 
-    # ---------------------------------------------------------------- dispatch
-
+    # dispatch
     def _execute(self, line: str) -> str:
         header, _, arg = line.partition(" ")
         header = header.upper()
@@ -216,8 +197,7 @@ class Device:
             return
         self._errors.append((code, message))
 
-    # ------------------------------------------------------------------- power
-
+    # power
     def _power_state(self) -> str:
         if self._powered_at is None:
             return "OFF"
@@ -281,10 +261,8 @@ class Device:
             result |= BIT_FLAGS.get(fault, 0)
         return str(result)
 
-    # ----------------------------------------------------------------- thermal
-
+    # thermal
     def _cooler_ready_after(self) -> float:
-        """Seconds after power-on at which the cooler enters its ready band."""
         span = AMBIENT_C - COOLER_SETPOINT_C
         return COOLER_TAU_S * math.log(span / COOLER_READY_BAND_C)
 
@@ -310,8 +288,7 @@ class Device:
         temp = self._detector_temp(self.now())
         return "READY" if abs(temp - COOLER_SETPOINT_C) <= COOLER_READY_BAND_C else "COOLING"
 
-    # ------------------------------------------------------------------ gimbal
-
+    # gimbal
     @staticmethod
     def _parse_float(arg: str) -> float:
         if not arg:
@@ -351,8 +328,7 @@ class Device:
         stalled = Fault.GIMBAL_STALL in self.faults
         return "MOVING" if self._az.moving(now, stalled) or self._el.moving(now) else "IDLE"
 
-    # ------------------------------------------------------------------ imager
-
+    # imager
     def _set_gain(self, arg: str) -> None:
         value = self._parse_float(arg)
         if value != int(value) or not GAIN_LIMITS[0] <= value <= GAIN_LIMITS[1]:
@@ -374,8 +350,7 @@ class Device:
         body = f"{self._frame_id},{mean:.2f},{std:.2f},{dead}"
         return f"{body},{zlib.crc32(body.encode('ascii')):08X}"
 
-    # ----------------------------------------------------------- sim controls
-
+    # sim controls
     def _inject_fault(self, arg: str) -> None:
         try:
             self.faults.add(Fault(arg.upper()))

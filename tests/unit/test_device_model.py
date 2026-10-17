@@ -1,8 +1,5 @@
-"""Unit tests for the simulator's behavioral model, driven by a fake clock.
-
-These verify the simulator itself, not the sensor requirements, so they are
-not traced to the SRS.
-"""
+"""Simulator model tests with a fake clock. Not traced to the SRS since they
+test the simulator, not the sensor."""
 
 import math
 import zlib

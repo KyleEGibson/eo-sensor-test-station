@@ -64,8 +64,8 @@ def write_markdown(matrix: Matrix, path: Path, title: str) -> Path:
     lines = [
         f"### {title}",
         "",
-        f"**{matrix.coverage:.1f}% verified** — "
-        + " · ".join(f"{status}: {count}" for status, count in counts.items() if count),
+        f"**{matrix.coverage:.1f}% verified**: "
+        + ", ".join(f"{status}: {count}" for status, count in counts.items() if count),
         "",
         "| Requirement | Method | Tests | Status |",
         "|---|---|---:|---|",

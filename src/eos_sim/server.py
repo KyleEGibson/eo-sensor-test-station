@@ -1,8 +1,7 @@
-"""TCP front end that exposes a Device over a line-based ASCII protocol.
+"""Serves a Device over TCP, one ASCII command per line.
 
-Real sensors of this kind usually talk RS-422 or Ethernet. The test station
-connects through pyserial's ``socket://`` URL handler, so the same driver code
-would work against a physical serial port (``COM3``) without changes.
+The station connects with pyserial's socket:// URL, so the same driver would
+work on a real serial port (COM3) unchanged.
 """
 
 from __future__ import annotations

@@ -1,8 +1,4 @@
-"""Measurement records and the SQLite results database.
-
-The database is append-only across runs, so it builds up a history that can
-be mined later for failure and trend analysis.
-"""
+"""Measurement records and the SQLite results DB (append-only, keeps history)."""
 
 from __future__ import annotations
 

@@ -1,9 +1,5 @@
-"""Pass/fail limits derived from the SRS (requirements/requirements.yaml).
-
-Keeping limits in one place means a requirement change is a one-line edit
-here, and the fault-detection tests check against the same numbers as the
-acceptance tests.
-"""
+"""Pass/fail limits from requirements/requirements.yaml, in one place so the
+acceptance and fault-detection tests use the same numbers."""
 
 BOOT_TIME_MAX_S = 3.0                      # SYS-002
 BUS_VOLTAGE_V = (27.0, 29.0)               # SYS-005

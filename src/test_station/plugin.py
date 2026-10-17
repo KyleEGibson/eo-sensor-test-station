@@ -1,11 +1,7 @@
-"""pytest integration that turns pytest into a test executive.
+"""pytest plugin that turns pytest into the test executive.
 
-Provides:
-  * command-line options to select the DUT and inject faults,
-  * the ``station``, ``sensor``, ``measure`` and ``inject`` fixtures,
-  * per-run records written to SQLite, an HTML report and a raw comm log.
-
-Loaded through ``-p test_station.plugin`` in pyproject.toml.
+Adds the DUT/fault options, the station/sensor/measure/inject fixtures, and
+writes results.db, the HTML report and the comm log after each run.
 """
 
 from __future__ import annotations
@@ -68,8 +64,6 @@ def _operator() -> str:
 
 
 class Station:
-    """Session-wide state: the DUT connection and the record of this run."""
-
     def __init__(self, config: pytest.Config) -> None:
         self.config = config
         opt = config.option
@@ -139,7 +133,6 @@ class Station:
         self.outputs.insert(0, render_report(run, self.report_dir / "test_report.html", self._rtm_href()))
 
     def _rtm_href(self) -> str | None:
-        """Relative link to the RTM, when the traceability plugin is producing one."""
         collector = self.config.pluginmanager.get_plugin("rtm-collector")
         if collector is None:
             return None
@@ -148,9 +141,6 @@ class Station:
 
 def pytest_configure(config: pytest.Config) -> None:
     config.stash[STATION] = Station(config)
-
-
-# ------------------------------------------------------------------- fixtures
 
 
 @pytest.fixture(scope="session")
@@ -209,9 +199,6 @@ def inject(station: Station, sensor: EOSensor):
         station.apply_run_faults()
 
 
-# ---------------------------------------------------------------------- hooks
-
-
 def _message(report: pytest.TestReport) -> str:
     if report.passed:
         return ""
@@ -241,8 +228,7 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
         retries = _retries(station) - item.stash.get(RETRIES_AT_START, _retries(station))
         message = _message(report)
         if report.failed and retries and item.get_closest_marker("timing"):
-            # Retry latency is indistinguishable from device delay, so point
-            # the engineer at the link before they suspect the hardware.
+            # retry latency looks just like a slow device, so say so
             message += (f"\n[station] {retries} comm retries during this timing test; "
                         "elapsed-time results may include retry latency")
         run.results.append(TestResult(

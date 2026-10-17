@@ -29,8 +29,7 @@ _DESCRIPTIONS = {
     Fault.COMM_CORRUPT: "Every third response has a corrupted byte",
 }
 
-# Built-in self test (*TST?) bit assigned to each fault. Faults missing here
-# are not caught by the sensor's own BIT; only external testing finds them.
+# *TST? bit per fault. Anything not listed is invisible to the sensor's own BIT.
 BIT_FLAGS = {
     Fault.GIMBAL_STALL: 0b0010,
     Fault.DEAD_PIXELS: 0b0100,

@@ -92,7 +92,7 @@
           {% endif %}
           {% if r.message %}<div class="msg">{{ r.message }}</div>{% endif %}
         </td>
-        <td>{{ r.requirements|join(", ") or "—" }}</td>
+        <td>{{ r.requirements|join(", ") or "-" }}</td>
         <td><span class="tag {{ r.outcome }}">{{ r.outcome|upper }}</span></td>
         <td class="num">{{ "%.2f"|format(r.duration_s) }}</td>
         <td class="num">{% if r.comm_retries %}<span class="tag skipped">{{ r.comm_retries }}</span>{% else %}0{% endif %}</td>
